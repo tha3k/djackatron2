@@ -16,6 +16,7 @@ import com.test.djackatron2.service.TransferService;
 public class DefaultTransferService implements TransferService {
 	private AccountRepository accountRepository;
 	private FeePolicy feePolicy;
+	private double minimumTransferAmount;
 
 	@Override
 	public void setAccountRepository(AccountRepository accountRepository) {
@@ -28,8 +29,13 @@ public class DefaultTransferService implements TransferService {
 	}
 
 	@Override
+	public void setMinimumTransferAmount(double minimumTransferAmount) {
+		this.minimumTransferAmount = minimumTransferAmount;
+	}
+
+	@Override
 	public TransferReceipt transfer(double amount, long srcAcctId, long destAcctId) {
-		if (amount<=0d) {
+		if (amount<=0d || amount < minimumTransferAmount) {
 			throw new IllegalArgumentException();
 		}
 		

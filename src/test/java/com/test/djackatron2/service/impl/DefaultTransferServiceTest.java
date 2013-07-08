@@ -24,6 +24,7 @@ public class DefaultTransferServiceTest {
 	@Before
 	public void setup() {
 		double flatFee = 5.00;
+		double minimumTransferAmount = 10.00;
 		Long srcAcctId = 1l;
 		Long destAcctId = 2l;
 		srcAccount = new Account();
@@ -44,6 +45,7 @@ public class DefaultTransferServiceTest {
 		transferService = new DefaultTransferService();
 		transferService.setAccountRepository(accountRepositoryMock);
 		transferService.setFeePolicy(feePolicyMock);
+		transferService.setMinimumTransferAmount(minimumTransferAmount);
 	}
 	
 	@Test
@@ -100,6 +102,20 @@ public class DefaultTransferServiceTest {
 	public void testTransferWhenNegativeAmount() {
 		//given
 		double transferAmount = -10.00;
+		assertEquals(100.00, srcAccount.getBalance(), 0);
+		assertEquals(0d, destAccount.getBalance(), 0);
+		
+		//when
+		transferService.transfer(transferAmount, srcAccount.getId(), destAccount.getId());
+		
+		//then
+		fail();
+	}
+	
+	@Test(expected=IllegalArgumentException.class)
+	public void testTransferWhenTransferLessThenMinimumAmount() {
+		//given
+		double transferAmount = 5.00;
 		assertEquals(100.00, srcAccount.getBalance(), 0);
 		assertEquals(0d, destAccount.getBalance(), 0);
 		
