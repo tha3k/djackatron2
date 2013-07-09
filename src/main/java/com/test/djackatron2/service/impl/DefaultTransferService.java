@@ -6,6 +6,7 @@ import com.test.djackatron2.model.Account;
 import com.test.djackatron2.model.TransferReceipt;
 import com.test.djackatron2.repository.AccountRepository;
 import com.test.djackatron2.service.FeePolicy;
+import com.test.djackatron2.service.InsufficientFundsException;
 import com.test.djackatron2.service.TransferService;
 
 /**
@@ -28,6 +29,10 @@ public class DefaultTransferService implements TransferService {
 
 	@Override
 	public TransferReceipt transfer(double amount, long srcAcctId, long destAcctId) {
+		if (amount<=0d) {
+			throw new IllegalArgumentException();
+		}
+		
 		Account srcAccount = accountRepository.findById(srcAcctId);
 		Account destAccount = accountRepository.findById(destAcctId);
 		
@@ -36,20 +41,24 @@ public class DefaultTransferService implements TransferService {
 		double feeAmount = feePolicy.calculateFee(amount);
 		
 		srcBlance -= amount+feeAmount;
-		destBlance += amount;
-		
-		srcAccount.setBalance(srcBlance);
-		destAccount.setBalance(destBlance);
-		
-		TransferReceipt receipt = new TransferReceipt();
-		receipt.setSourceAccount(srcAcctId);
-		receipt.setDestinationAccount(destAcctId);
-		receipt.setTransferAmount(amount);
-		receipt.setIssueDate(new Date());
-		receipt.setBlance(srcBlance);
-		receipt.setFeeAmount(feeAmount);
-		
-		return receipt;
+		if (srcBlance>=0) {
+			destBlance += amount;
+			
+			srcAccount.setBalance(srcBlance);
+			destAccount.setBalance(destBlance);
+			
+			TransferReceipt receipt = new TransferReceipt();
+			receipt.setSourceAccount(srcAcctId);
+			receipt.setDestinationAccount(destAcctId);
+			receipt.setTransferAmount(amount);
+			receipt.setIssueDate(new Date());
+			receipt.setBlance(srcBlance);
+			receipt.setFeeAmount(feeAmount);
+			
+			return receipt;
+		} else {
+			throw new InsufficientFundsException();
+		}
 	}
 
 }
