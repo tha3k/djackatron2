@@ -3,6 +3,7 @@ import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.mockito.Mockito.*;
 
+import org.joda.time.LocalTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -11,6 +12,8 @@ import com.test.djackatron2.model.TransferReceipt;
 import com.test.djackatron2.repository.AccountRepository;
 import com.test.djackatron2.service.FeePolicy;
 import com.test.djackatron2.service.InsufficientFundsException;
+import com.test.djackatron2.service.OutOfServiceException;
+import com.test.djackatron2.service.TimeService;
 
 /**
  * @author piya.tae@gmail.com
@@ -125,4 +128,56 @@ public class DefaultTransferServiceTest {
 		//then
 		fail();
 	}
+
+    @Test
+    public void testTransferWithCheckTimeService() {
+		//given
+		double transferAmount = 30.00;
+		assertEquals(100.00, srcAccount.getBalance(), 0);
+		assertEquals(0d, destAccount.getBalance(), 0);
+
+		TimeService mockTimeService = mock(TimeService.class);
+        when(mockTimeService.isServiceAvailable(any(LocalTime.class))).thenReturn(true);
+        transferService.setTimeService(mockTimeService);
+		
+		//when
+		TransferReceipt receipt = transferService.transfer(transferAmount, srcAccount.getId(), destAccount.getId());
+		
+		//then
+    	//verify behavior
+		verify(mockTimeService).isServiceAvailable(any(LocalTime.class));
+		
+		assertThat(receipt.getTransferAmount(), equalTo(transferAmount));
+		assertThat(receipt.getBlance(), equalTo(65.00));
+		assertThat(receipt.getFeeAmount(), equalTo(5.00));
+		assertThat(receipt.getSourceAccount(), equalTo(srcAccount.getId()));
+		assertThat(receipt.getDestinationAccount(), equalTo(destAccount.getId()));
+		assertNotNull(receipt.getIssueDate());
+
+		assertThat(srcAccount.getBalance(), equalTo(65.00));
+		assertThat(destAccount.getBalance(), equalTo(30.00));
+    }
+
+    @Test
+    public void testTransferWithCheckingOutOfTimeService() {
+    	//given
+		double transferAmount = 30.00;
+		assertEquals(100.00, srcAccount.getBalance(), 0);
+		assertEquals(0d, destAccount.getBalance(), 0);
+
+		TimeService mockTimeService = mock(TimeService.class);
+        when(mockTimeService.isServiceAvailable(any(LocalTime.class))).thenReturn(false);
+        transferService.setTimeService(mockTimeService);
+
+        //when
+        try {
+    		transferService.transfer(transferAmount, srcAccount.getId(), destAccount.getId());
+        	fail();
+        } catch (OutOfServiceException e) {
+        	//then
+        	//verify behavior
+            verify(mockTimeService).isServiceAvailable(any(LocalTime.class));
+		}
+
+    }
 }

@@ -8,4 +8,5 @@ public interface TransferService {
 	public void setAccountRepository(AccountRepository accountRepository);
 	public void setFeePolicy(FeePolicy feePolicy);
 	public void setMinimumTransferAmount(double minimumTransferAmount);
+	public void setTimeService(TimeService timeService);
 }

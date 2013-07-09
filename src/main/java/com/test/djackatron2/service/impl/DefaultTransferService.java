@@ -2,11 +2,15 @@ package com.test.djackatron2.service.impl;
 
 import java.util.Date;
 
+import org.joda.time.LocalTime;
+
 import com.test.djackatron2.model.Account;
 import com.test.djackatron2.model.TransferReceipt;
 import com.test.djackatron2.repository.AccountRepository;
 import com.test.djackatron2.service.FeePolicy;
 import com.test.djackatron2.service.InsufficientFundsException;
+import com.test.djackatron2.service.OutOfServiceException;
+import com.test.djackatron2.service.TimeService;
 import com.test.djackatron2.service.TransferService;
 
 /**
@@ -17,6 +21,7 @@ public class DefaultTransferService implements TransferService {
 	private AccountRepository accountRepository;
 	private FeePolicy feePolicy;
 	private double minimumTransferAmount;
+	private TimeService timeService;
 
 	@Override
 	public void setAccountRepository(AccountRepository accountRepository) {
@@ -34,7 +39,16 @@ public class DefaultTransferService implements TransferService {
 	}
 
 	@Override
+	public void setTimeService(TimeService timeService) {
+		this.timeService = timeService;
+	}
+
+	@Override
 	public TransferReceipt transfer(double amount, long srcAcctId, long destAcctId) {
+		if (timeService!=null&&!timeService.isServiceAvailable(new LocalTime())) {
+			throw new OutOfServiceException();
+		}
+		
 		if (amount<=0d || amount < minimumTransferAmount) {
 			throw new IllegalArgumentException();
 		}
